@@ -5,10 +5,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 import sklearn
 import seaborn as sns
-import dexplot as dxp
+import plotly.express as px
 
 #           INITIAL DATA ANALYSIS
 #IMPORT the data as dataframe from the csv file
+
 dataset = pd.read_csv('C:/Users/xarak/Documents/StrokePrediction/healthcare-dataset-stroke-data.csv')
 
 #GET MORE INFO FOR THE DATASET
@@ -50,7 +51,8 @@ for i in categorical:
 
 # Display the statistical overview of the categorical data
 print(dataset.describe(include=[np.object]))
-#Print a describe to see some statistics for the numerical data !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! EXPLAIN MORE!
+
+#Print a describe to see some statistics for the numerical data !!
 print(dataset.describe())
 
 
@@ -59,7 +61,7 @@ print(dataset.describe())
 #                         HANDLING MISSING VALUES
 
 #DROPPING UNWANTED COLUMNS
-#Drop the ID column as its not needed
+# Drop the ID column as its not needed
 dataset = dataset.drop('id', axis=1)
 
 #Sum up all the MISSING values from each column
@@ -76,13 +78,13 @@ dataset['bmi'].replace('N/A', np.nan, inplace=True)
 # print("Number of unique gender values are: ", dataset['gender'].nunique())
 
 #Drop the gender row with the outlier
-dataset= dataset[dataset['gender'] != 'Other']
+dataset = dataset[dataset['gender'] != 'Other']
 
 #Replace the nan values with the mean of each column
 dataset['bmi'].fillna(dataset['bmi'].mean(), inplace=True)
 
-# The nan values for 'smoking_status' is huge 1544 I don't know if it's good practice to replace the nan with the dominant value?????????????????????????????
-#????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????????
+
+# The nan values for 'smoking_status' is huge 1544 I don't know if it's good practice to replace the nan with the dominant value.!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 dataset['smoking_status'].fillna(dataset['smoking_status'].mode()[0], inplace=True)
 
 # This is to show that after the handling I have NO missing/Unknown data
@@ -90,35 +92,117 @@ print(dataset.isna().sum())
 
 
 #           EXPLORATORY DATA ANALYSIS
+dataset.info()
+
+#Create two datasets Stroke False and True for people who hadn't and had strokes respectively
+
+stroke_False = dataset[dataset['stroke'] == 0]
+stroke_True = dataset[(dataset['stroke'] == 1)]
+
+print("People who have not had a stroke in percentage", format(len(stroke_False)/len(dataset)* 100, '.2f'), '%')
+print("People who have had a stroke in percentage", format(len(stroke_True)/len(dataset)* 100, '.2f'), '%')
+
+# We can see that from the dataset 95.13 % haven't had a stroke and 4.87% have had stroke. The dataset is not balanced and we should consider
+#ways of sampling to improve the skewness of the dataset.
 
 
 
-#Relation of Gender and Stroke
-dataset.groupby('gender', 'stroke_status').size().plot(kind ='bar')
+
+#                  VISUALIZIONS
+
+#Correlation heatmap
+plt.figure(figsize=(16, 6))
+mask = np.triu(np.ones_like(dataset.corr(), dtype=np.bool))
+heatmap = sns.heatmap(dataset.corr(), mask=mask, vmin=-1, vmax=1, annot=True, cmap='BrBG')
+heatmap.set_title('Triangle Correlation Heatmap', fontdict={'fontsize':18}, pad=16)
+plt.show()
+
+#From the correlation heatmap we can see if there is high or low correlation between the features.
+#A strange result is that the correlation between bmi and heart_disease is very low on 3%.
+#This is considered a strange result which we should further investigate since usually obesse people have heart
+#as their age progress.
+
+# We can further deduce that age is highly correlated to all the features.
+# The highest correlation is 33% and it's between bmi and age.
+#Age is a critical feature and one that has direct connection with every other feature on our dataset
+# Apart from that the highest correlation is between bmi and hypertension. Which is at 16%.
+
+
+
+continuous_numerical = ['age','avg_glucose_level','bmi']
+# Plot the distribution of clinical patient continuous numerical data: age, average glucose level and BMI.
+
+# Set up the matplotlib figure
+f, axes = plt.subplots(ncols=3, figsize=(17, 6))
+
+#Numerical Features Distribution
+count = 0
+color = ['m','y','g']
+for feature in continuous_numerical:
+    sns.histplot(dataset[feature], kde=True, color=color[count], ax=axes[count]).set_title(feature + ' distribution')
+    axes[count].set_ylabel('Patient Count')
+    count = count + 1
+plt.show()
+
+
+# Create plots to display the relation of categorical data having a stroke
+for feature in categorical:
+    sns.countplot(x=feature, hue='stroke', data=dataset,  palette=["#7fcdbb", "#edf8b1"])
+    plt.title(feature + " - stroke frequency")
+    plt.xlabel(feature)
+    plt.ylabel("Frequency")
+    plt.show()
+
+# From these 3  charts we can see the count of the binary features in relation to stroke.
+binary = ['hypertension', 'ever_married','gender','heart_disease']
+for i in binary:
+    sns.countplot(x=i , hue= 'stroke', data= dataset )
+    plt.title("Stroke - " + i + " Count")
+    plt.xlabel(i)
+    plt.ylabel('Count')
+    plt.show()
+
+
+
+bin_categorical = ['Residence_type' ]
+all = binary + bin_categorical
+for i in all :
+    sns.countplot(x=i , data= stroke_True , color='r' )
+    plt.title(i + " on people who suffered stroke ")
+    plt.xlabel(i)
+    plt.ylabel('Count')
+    plt.show()
+
+# On this plot we can visually infer that there seems to be that there are 2 clusters
+# for people who have had a stroke. One is bigger than the other and seems to include people
+# of age more than 60 and of within normal glucose levels. And the second group shows
+# that people of age with very high glucose levels have had a stroke.
+
+# Set up the figure
+f, ax = plt.subplots(figsize=(8, 8))
+ax.set_aspect("equal")
+
+# Draw a contour plot to represent each bivariate density
+sns.kdeplot(
+    data=dataset, x="avg_glucose_level",
+    y="age",
+    hue="stroke")
+plt.show()
 
 
 
 
-
-
-
-# #Create two datasets Stroke False and True for people who hadn't and had respectively strokes
+# # This plot does not provide any value
+# # Set up the figure
+# f, ax = plt.subplots(figsize=(8, 8))
+# ax.set_aspect("equal")
 #
-# stroke_False = dataset[dataset['stroke'] == 0]
-# stroke_True = dataset[(dataset['stroke'] == 1)]
-#
-# print("People who have not had a stroke in percentage", len(stroke_False)/len(dataset)* 100, '%')
-# print("People who have had a stroke in percentage", len(stroke_True)/len(dataset)* 100, '%')
-#
-# #Correlation figure
-# plt.figure(figsize=(10,10))
-# sns.heatmap(dataset.corr(), vmin=-1, cmap='coolwarm', annot=True)
-# #plt.show()
-#
-# #VISUALIZE
-# #sns.pairplot(dataset, hue = 'stroke', vars=['gender','age','hypertension','heart_disease','ever_married','work_type','Residence_type','avg_glucose_level','bmi','smoking_status','stroke'])
-# #plt.show()
-#
+# # Draw a contour plot to represent each bivariate density
+# sns.kdeplot(
+#     data=dataset, x="age",
+#     y="bmi",
+#     hue="stroke")
+# plt.show()
 
 
 
@@ -135,8 +219,6 @@ dataset.groupby('gender', 'stroke_status').size().plot(kind ='bar')
 #     dataset[str(col)] = label_encoded(dataset[str(col)])
 #
 # print(dataset)
-#
-
 
 
 # #Create the input dataset and the target class with the output data
@@ -154,3 +236,4 @@ dataset.groupby('gender', 'stroke_status').size().plot(kind ='bar')
 # print(y_train.shape)
 # print(X_test.shape)
 # print(y_test.shape)
+
