@@ -128,7 +128,7 @@ plt.show()
 # Apart from that the highest correlation is between bmi and hypertension. Which is at 16%.
 
 
-
+#Create a list of continuous numerical data
 continuous_numerical = ['age','avg_glucose_level','bmi']
 # Plot the distribution of clinical patient continuous numerical data: age, average glucose level and BMI.
 
@@ -154,7 +154,7 @@ for feature in categorical:
     plt.show()
 
 # From these 3  charts we can see the count of the binary features in relation to stroke.
-binary = ['hypertension', 'ever_married','gender','heart_disease']
+binary = ['hypertension', 'ever_married','gender','heart_disease', ]
 for i in binary:
     sns.countplot(x=i , hue= 'stroke', data= dataset )
     plt.title("Stroke - " + i + " Count")
@@ -162,21 +162,18 @@ for i in binary:
     plt.ylabel('Count')
     plt.show()
 
-
-
-bin_categorical = ['Residence_type' ]
-all = binary + bin_categorical
-for i in all :
+#Create count plots only for the proportion of people that had a stroke. Note that the imbalance of the dataset its very
+#obvious since in  many cases we would have expected completely different results on the plots.
+for i in binary + ['Residence_type'] :
     sns.countplot(x=i , data= stroke_True , color='r' )
     plt.title(i + " on people who suffered stroke ")
     plt.xlabel(i)
     plt.ylabel('Count')
     plt.show()
 
-# On this plot we can visually infer that there seems to be that there are 2 clusters
-# for people who have had a stroke. One is bigger than the other and seems to include people
-# of age more than 60 and of within normal glucose levels. And the second group shows
-# that people of age with very high glucose levels have had a stroke.
+
+# A kernel density estimate (KDE) plot is a method for visualizing the distribution of observations in a dataset,
+# analagous to a histogram. KDE represents the data using a continuous probability density curve in one or more dimensions.
 
 # Set up the figure
 f, ax = plt.subplots(figsize=(8, 8))
@@ -189,6 +186,11 @@ sns.kdeplot(
     hue="stroke")
 plt.show()
 
+# On this plot we can visually infer that there seems to be that there are 2 clusters
+# for people who have had a stroke. One is bigger than the other and seems to include people
+# of age more than 60 and of within normal glucose levels. And the second group shows
+# that people of age with very high glucose levels have had a stroke.
+#
 
 
 
