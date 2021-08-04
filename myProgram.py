@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import sklearn
 import seaborn as sns
 import plotly.express as px
+import imblearn
 
 #           INITIAL DATA ANALYSIS
 #IMPORT the data as dataframe from the csv file
@@ -19,7 +20,7 @@ print("This is how the dataset looks like :", dataset.head())
 print(dataset.info())
 print(dataset.describe())
 
-#Get the size of the dataset.
+#Get the size of the dataset
 print("The dataset size is : ", dataset.shape)
 
 # After having the size of the data, see how many distinct ids I have
@@ -36,6 +37,7 @@ categorical = dataset.select_dtypes(include=['object']).columns.tolist()
 #Create a Numerical values dataframe
 numerical = dataset.select_dtypes(include=['int64', 'float64']).columns.tolist()
 numerical.remove('stroke')
+
 
 print('categorical variables:', categorical)
 print('numerical variables:', numerical)
@@ -190,8 +192,6 @@ plt.show()
 # for people who have had a stroke. One is bigger than the other and seems to include people
 # of age more than 60 and of within normal glucose levels. And the second group shows
 # that people of age with very high glucose levels have had a stroke.
-#
-
 
 
 # # This plot does not provide any value
@@ -207,35 +207,128 @@ plt.show()
 # plt.show()
 
 
+########################SCALING THE DATA##############################
 
 ## #Label encoder to NORMALISE the data ( remove decimal points, make values binary from T-F .etc)
-# from sklearn.preprocessing import LabelEncoder
-# def label_encoded(feat):
-#     le = LabelEncoder()
-#     le.fit(feat)
-#     print(feat.name,le.classes_)
-#     return le.transform(feat)
-#
-#
-# for col in dataset.columns:
-#     dataset[str(col)] = label_encoded(dataset[str(col)])
-#
-# print(dataset)
+from sklearn.preprocessing import LabelEncoder
+def label_encoded(feat):
+    le = LabelEncoder()
+    le.fit(feat)
+    print(feat.name,le.classes_)
+    return le.transform(feat)
 
 
-# #Create the input dataset and the target class with the output data
-# X = dataset.drop(['stroke'], axis =1)
-# y = dataset['stroke']
-#
-# #Split Training and testing data
-# from sklearn.model_selection import train_test_split
-# X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
-#
-# print("----------------------------------------------")
-#
-# #Gives the number of rows and columns
-# print(X_train.shape)
-# print(y_train.shape)
-# print(X_test.shape)
-# print(y_test.shape)
+for col in dataset.columns:
+    dataset[str(col)] = label_encoded(dataset[str(col)])
+
+print(dataset)
+
+
+#Create the input dataset and the target class with the output data
+X = dataset.drop(['stroke'], axis =1)
+y = dataset['stroke']
+
+#Split Training and testing data
+from sklearn.model_selection import train_test_split
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.3)
+
+print("----------------------------------------------")
+
+#Gives the number of rows and columns
+print(X_train.shape)
+print(y_train.shape)
+print(X_test.shape)
+print(y_test.shape)
+
+############SMOTE########
+from imblearn.over_sampling import SMOTE
+sm = SMOTE(random_state=42)
+X_res, y_res = sm.fit_resample(X_train, y_train)
+
+############### DECISION TREE CLASSIFIER ################
+from sklearn.tree import DecisionTreeClassifier
+decision_tree = DecisionTreeClassifier()   #Instantiate an object out of our class
+decision_tree.fit(X_res,y_res)
+
+from sklearn.metrics import classification_report , confusion_matrix
+from sklearn.metrics import accuracy_score
+y_predict_test = decision_tree.predict(X_test)
+print(y_predict_test)
+print(y_test)
+cm = confusion_matrix(y_test, y_predict_test)
+
+ax= plt.subplot()
+sns.heatmap(cm, annot=True, ax = ax, fmt = 'g'); #annot=True to annotate cells
+# labels, title and ticks
+ax.set_xlabel('True', fontsize=20)
+ax.xaxis.set_label_position('top')
+ax.xaxis.set_ticklabels(['Did not suffer stroke','suffered stroke'], fontsize = 10)
+ax.xaxis.tick_top()
+
+ax.set_ylabel('Predicted', fontsize=20)
+ax.yaxis.set_ticklabels(['Did not suffer stroke', 'suffered stroke'], fontsize = 10)
+plt.show()
+print(classification_report(y_test, y_predict_test))
+print('Accuracy score is: ' , accuracy_score(y_test,y_predict_test))
+
+
+
+#####################################################
+print("___________________RandomForestClassifier_____________________")
+from sklearn.ensemble import RandomForestClassifier
+RandomForest = RandomForestClassifier(n_estimators = 150)
+RandomForest.fit(X_res, y_res)
+y_predict_test = RandomForest.predict(X_test)
+cm = confusion_matrix(y_test, y_predict_test)
+ax= plt.subplot()
+
+sns.heatmap(cm, annot=True, ax = ax, fmt = 'g'); #annot=True to annotate cells
+# labels, title and ticks
+ax.set_xlabel('True', fontsize=20)
+ax.xaxis.set_label_position('top')
+ax.xaxis.set_ticklabels(['NO stroke','Had stroke'], fontsize = 10)
+ax.xaxis.tick_top()
+
+ax.set_ylabel('Predicted', fontsize=20)
+ax.yaxis.set_ticklabels(['NO stroke', 'Had stroke'], fontsize = 10)
+plt.show()
+
+print(classification_report(y_test, y_predict_test))
+print('Accuracy score is: ' , accuracy_score(y_test,y_predict_test))
+
+
+print("___________________LogisticRegression_________________________")
+from sklearn.linear_model import LogisticRegression
+LogisticRegressionclf = LogisticRegression(random_state=0, max_iter = 400)
+LogisticRegressionclf.fit(X_res,y_res)
+y_predict_test = LogisticRegressionclf.predict(X_test)
+cm = confusion_matrix(y_test, y_predict_test)
+
+print(classification_report(y_test, y_predict_test))
+print('Accuracy score is: ' , accuracy_score(y_test,y_predict_test))
+
+
+
+
+import scipy.stats
+scipy.stats.pearsonr(dataset['smoking_status'],dataset['stroke'],)    # Pearson's r
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
